@@ -1,7 +1,7 @@
 # The-Watchers-Multiverse
 The Watchers世界观开源社区：小说正文与共同创作协议
 
-小说正文位于Novel文件夹，包括PDF与DOCX版本，可下载后阅读
+小说正文位于Novel文件夹，包括PDF、txt与DOCX版本，可下载后阅读
 
 # THE WATCHERS
 
