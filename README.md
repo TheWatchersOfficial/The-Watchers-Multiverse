@@ -73,7 +73,7 @@ The Watchers 世界观开源社区 | 小说正文 | 设定集 | 共同创作
 我会在空闲碎片时间查看 Issues，下载您的作品并上传至 `/fanworks` 对应的文件夹中，并在提交信息中注明您的署名。收录完成后，我会关闭该 Issue。
 
 ### 方式二：通过社交媒体提交
-如果您不习惯使用 GitHub，也可以在 [Bilibili、百度贴吧、小红书等平台] 发布作品时带上话题 **#TheWatchers开源共创#**，并通过私信或邮箱 [thewatchers@foxmail.com](mailto:thewatchers@foxmail.com)将作品文件发送给我。我会在有空时将其收录至仓库。
+如果您不习惯使用 GitHub，也可以在 [Bilibili、Lofter等平台] 发布作品时带上话题 **#TheWatchers开源共创#**，并通过私信或邮箱 [thewatchers@foxmail.com](mailto:thewatchers@foxmail.com)将作品文件发送给我。我会在有空时将其收录至仓库。
 
 ---
 **📄 协议确认**
