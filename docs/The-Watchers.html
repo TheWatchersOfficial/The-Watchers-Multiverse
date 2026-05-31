@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The Watchers | 守望者 · 多元宇宙史诗</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* 增强沉浸感，避免文字拖拽 */
+        }
+
+        body {
+            background-color: #000000;
+            font-family: 'Inter', 'Segoe UI', 'Cinema', 'Orbitron', 'Microsoft YaHei', sans-serif;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* 动态粒子背景层 (canvas) */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none; /* 保证按钮等可点，鼠标事件穿透但自定义鼠标反馈由上层js控制 */
+        }
+
+        /* 主内容容器 */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem 2rem 4rem;
+            backdrop-filter: blur(2px);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 金色主题核心变量 */
+        :root {
+            --gold-primary: rgb(255, 210, 25);
+            --gold-glow: rgba(255, 210, 25, 0.5);
+            --dark-bg: #0a0a0a;
+            --card-bg: rgba(0, 0, 0, 0.65);
+            --border-gold: rgba(255, 210, 25, 0.6);
+        }
+
+        /* LOGO 区域 */
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+            perspective: 800px;
+        }
+
+        canvas#logo-canvas {
+            width: 150px;
+            height: 150px;
+            display: block;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: filter 0.3s ease;
+            filter: drop-shadow(0 0 8px var(--gold-glow));
+        }
+
+        canvas#logo-canvas:hover {
+            filter: drop-shadow(0 0 20px var(--gold-primary));
+        }
+
+        .site-title {
+            font-size: 3.4rem;
+            font-weight: 800;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ffffff 0%, var(--gold-primary) 70%, #aa2e2e 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-top: 0.25rem;
+            text-shadow: 0 0 12px rgba(255, 210, 25, 0.3);
+            font-family: 'Orbitron', monospace;
+        }
+
+        .sub {
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            color: rgba(255, 210, 25, 0.7);
+            border-top: 1px solid var(--gold-primary);
+            display: inline-block;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        /* 简介卡片 */
+        .synopsis-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-gold);
+            border-radius: 28px;
+            padding: 1.8rem 2.2rem;
+            margin: 2rem 0 2rem 0;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(255, 210, 25,0.1) inset;
+            transition: transform 0.25s ease, border-color 0.3s;
+        }
+
+        .synopsis-card:hover {
+            border-color: var(--gold-primary);
+            transform: translateY(-3px);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--gold-primary);
+            font-weight: 500;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--gold-primary), transparent);
+        }
+
+        .synopsis-text {
+            line-height: 1.7;
+            font-size: 1rem;
+            color: #dddddd;
+            text-align: justify;
+        }
+
+        /* 原文节选区 */
+        .excerpt-section {
+            background: rgba(5, 5, 5, 0.75);
+            backdrop-filter: blur(10px);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 210, 25, 0.4);
+            padding: 2rem;
+            margin: 1rem 0 2rem;
+            width: 100%;
+            transition: all 0.4s;
+            position: relative;
+        }
+
+        .excerpt-text {
+            font-size: 1.15rem;
+            line-height: 1.75;
+            font-style: italic;
+            font-weight: 400;
+            color: #f0f0f0;
+            text-shadow: 0 1px 2px black;
+            quotes: "“" "”" "‘" "’";
+            padding: 0 1rem;
+            border-left: 3px solid var(--gold-primary);
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }
+
+        .excerpt-source {
+            margin-top: 1.2rem;
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--gold-primary);
+            letter-spacing: 1px;
+        }
+
+        .random-btn {
+            background: transparent;
+            border: 1.5px solid var(--gold-primary);
+            color: var(--gold-primary);
+            padding: 0.5rem 1.5rem;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .random-btn:hover {
+            background: var(--gold-primary);
+            color: black;
+            box-shadow: 0 0 15px var(--gold-primary);
+            border-color: transparent;
+        }
+
+        /* 底部装饰 */
+        .footer-note {
+            margin-top: 3rem;
+            font-size: 0.7rem;
+            opacity: 0.6;
+            letter-spacing: 2px;
+            text-align: center;
+            border-top: 1px dashed rgba(255,210,25,0.3);
+            padding-top: 1.8rem;
+            width: 100%;
+        }
+
+        /* 互动悬浮光晕 */
+        .glow-effect {
+            transition: box-shadow 0.2s;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+            .site-title {
+                font-size: 2.2rem;
+            }
+            .excerpt-text {
+                font-size: 0.95rem;
+            }
+            .synopsis-card {
+                padding: 1.2rem;
+            }
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--gold-primary);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="main-container">
+    <div class="logo-wrapper">
+        <canvas id="logo-canvas" width="200" height="200" style="width:150px; height:150px;"></canvas>
+        <div class="site-title">THE WATCHERS</div>
+        <div class="sub">⌇ 此故事不讲述 · 它解码 ⌇</div>
+    </div>
+
+    <!-- 故事简介 -->
+    <div class="synopsis-card">
+        <div class="section-title">
+            <span>✦ 纪元回响 ✦</span>
+        </div>
+        <div class="synopsis-text">
+            在UG与灵音公司构筑的压抑未来中，超能力「GNOSIS」如野火迸发。ZEV·Prime与Jess等觉醒者组建了「守望者」（The Watchers），从Sphereberg街垒抗争到星际流亡，于木卫四发现归真者遗迹，殖民至异星Zholo6561。面对吞噬文明的生存机器E.R.O与多元宇宙的崩坏法则，他们游走于金色与黑暗之间，成为横跨平行时间的执剑者。从南极基地到御夫座星云，从异兽改造到多元宇宙战争——这是一曲关于自由、存续与彼岸的史诗。
+        </div>
+    </div>
+
+    <!-- 原文优美片段节选 (带随机切换) -->
+    <div class="excerpt-section">
+        <div class="section-title">
+            <span>◈ 卷宗 · 凝固之诗 ◈</span>
+        </div>
+        <div id="excerpt-content" class="excerpt-text">
+            <!-- js动态填充随机摘录 -->
+        </div>
+        <div class="excerpt-source" id="excerpt-source">—— 选自 · 未竟之章</div>
+        <div style="display: flex; justify-content: center;">
+            <button class="random-btn" id="randomBtn">⟳ 漫游残响 ⟳</button>
+        </div>
+    </div>
+    
+    <div class="footer-note">
+        【 黑金纪元 · 倒悬三角凝视深渊 】<br>
+        〣 多元宇宙之核 〣 厄普希隆力场永续震荡 〣
+    </div>
+</div>
+
+<script>
+    // ---------- 优美原文库（基于小说精选，兼顾大场景、山水与哲学之境）----------
+    const excerpts = [
+        {
+            text: "云层如浮屠一般在天空中立体分布，构成绝美的景象。以前ZEV·Prime只在飞机上欣赏过这种风景，却从来没有以今天这样的方式“行走”其中。阳光从上层云朵的缝隙之间穿出，经过下层云的反射形成斑斓的粼光，那是华丽的宝石质地。闪雷翻腾于云层浓密堆积之处，震耳欲聋却未能让他恐惧一分，那些巨大的能量反而可以为他所用。疾风之中自由落体，霞光照耀错位的云层和地面。他享受着这前所未有的体验，在这独处中飞向南极。",
+            source: "—— CHAPTER 03 · METAMORPHOSIS"
+        },
+        {
+            text: "汪洋从万米高空倾泻而下，浩荡天洪于苍穹间映出奈落之虹。千里长云铺开灰色的天幕，冷雨之中一束辉光在光滑的岩体上留下一抹突兀的暖色。石柱嶙峋，在弯曲的海面上肃穆地矗立，亦如众神沉睡的身影。巡逻舰队与飞霞于朦胧中共游，纷乱的方位感令人如置身梦境。层云开辟，天光玲珑，散落的水晶在静流的江河上激起轮轮波涛，云层空洞之中可见立体的云团正与坚实的浮空山岳共筑天上国度。",
+            source: "—— CHAPTER 40 · MAYSTORM (上)"
+        },
+        {
+            text: "晨曦从东方冉冉升起，穿透厚重的云层将金色流光抛洒在千疮百孔的穹顶上，均匀地投射在The Watchers装甲车的炮塔与E.R.O机甲的纳米肌肉上。朝阳将光芒洒在千疮百孔的战场，废墟之上，纳米菌毯与异兽残骸同浴天光。世界尚未痊愈，但第一道曙光已然刺破永夜。",
+            source: "—— CHAPTER 23 · R.T.B (下)"
+        },
+        {
+            text: "晚霞在天空一角纵情燃烧，更加衬托出剩余苍穹的幽蓝。从浸润在蓝调的山野中向上望去，已经能够依稀看见璀璨的星河。The Watchers的生活设施隐入恬然的山脉之中，只剩一些架空的平台露出山体，在它们附近的位置亮出一圈柔和的金色暖光，暗示着这些山体内部已被替换为高度先进的人居。越过这些披着山地外壳的居所，能够察觉到更远地方巨型浮空平台的模糊轮廓。",
+            source: "—— CHAPTER 30 · ZEV"
+        },
+        {
+            text: "长川之上悬浮之磐岩雕作靓丽居所，折叠海洋下穿流旧世回忆中街巷之再现。繁樱盛放于无罪花园之顶，永恒甘雾滋润万千生灵。以至于建筑不再成为必要范式，幽居者大可以天为顶，靠谷为墙，自得栖居清流绕桃源柔转之处，安顿千里流云之间。",
+            source: "—— CHAPTER 42 · D.A.A.T"
+        }
+    ];
+
+    // 随机索引初始化
+    let currentExcerptIndex = Math.floor(Math.random() * excerpts.length);
+    
+    function updateExcerpt(index) {
+        const excerptDiv = document.getElementById('excerpt-content');
+        const sourceSpan = document.getElementById('excerpt-source');
+        if (excerptDiv && sourceSpan) {
+            excerptDiv.innerHTML = `“ ${excerpts[index].text} ”`;
+            sourceSpan.innerHTML = excerpts[index].source;
+        }
+    }
+    
+    function randomExcerpt() {
+        let newIndex = Math.floor(Math.random() * excerpts.length);
+        // 避免连续相同（可选）
+        while (newIndex === currentExcerptIndex && excerpts.length > 1) {
+            newIndex = Math.floor(Math.random() * excerpts.length);
+        }
+        currentExcerptIndex = newIndex;
+        updateExcerpt(currentExcerptIndex);
+        // 添加轻量动画反馈
+        const box = document.querySelector('.excerpt-section');
+        box.style.transform = 'scale(0.99)';
+        setTimeout(() => { box.style.transform = ''; }, 150);
+    }
+    
+    // ---------- LOGO绘制：倒悬等边三角形 (空心) 黑金主题, 动态光晕 ----------
+    const logoCanvas = document.getElementById('logo-canvas');
+    const ctxLogo = logoCanvas.getContext('2d');
+    let logoGlowIntensity = 0;
+    let glowDirection = 1;
+    const GOLD_MAIN = "rgb(255, 210, 25)";
+    const GOLD_DARK = "rgb(255/2, 210/2, 25/2)";
+    
+    function drawInvertedTriangle(glowOffset = 0) {
+        const w = logoCanvas.width, h = logoCanvas.height;
+        ctxLogo.clearRect(0, 0, w, h);
+        // 中心坐标
+        const cx = w/2, cy = h/2;
+        const side = 85;   // 三角形边长
+        const heightTri = side * Math.sqrt(3) / 2;  // 等边三角形高
+        // 倒悬: 顶点在下，底边在上 -> 计算三个顶点 (顶点向下)
+        // 顶点 (底部)
+        const bottomX = cx;
+        const bottomY = cy + heightTri/2.5; // 视觉中心偏移稍许
+        // 左上点
+        const leftX = cx - side/2;
+        const leftY = cy - heightTri/2.2;
+        // 右上点
+        const rightX = cx + side/2;
+        const rightY = cy - heightTri/2.2;
+        
+        ctxLogo.beginPath();
+        ctxLogo.moveTo(bottomX, bottomY);
+        ctxLogo.lineTo(leftX, leftY);
+        ctxLogo.lineTo(rightX, rightY);
+        ctxLogo.closePath();
+        
+        // 空心效果: 描边，内部透明
+        const lineWidthBase = 3.2;
+        const glowFactor = 1 + Math.sin(glowOffset) * 0.5;
+        ctxLogo.lineWidth = lineWidthBase + glowFactor * 1.5;
+        ctxLogo.strokeStyle = GOLD_MAIN;
+        ctxLogo.shadowBlur = 12 + 8 * Math.sin(glowOffset);
+        ctxLogo.shadowColor = GOLD_MAIN;
+        ctxLogo.stroke();
+        
+        // 增加内层精细光晕描边 (细线加强)
+        ctxLogo.beginPath();
+        ctxLogo.moveTo(bottomX, bottomY);
+        ctxLogo.lineTo(leftX, leftY);
+        ctxLogo.lineTo(rightX, rightY);
+        ctxLogo.closePath();
+        ctxLogo.lineWidth = 1.5;
+        ctxLogo.strokeStyle = "rgba(255, 210, 25, 0.9)";
+        ctxLogo.shadowBlur = 6;
+        ctxLogo.stroke();
+        
+        // 在三角形的三个角点缀光晕粒子效果(动态)
+        ctxLogo.shadowBlur = 0;
+        for (let angle = 0; angle < Math.PI * 2; angle += 0.5) {
+            // 微量极光闪烁效果
+        }
+        // 增加中心悬浮金尘
+        ctxLogo.beginPath();
+        ctxLogo.arc(cx, cy + 3, 3 + Math.sin(glowOffset)*1.2, 0, Math.PI*2);
+        ctxLogo.fillStyle = `rgba(255, 210, 25, ${0.3 + Math.sin(glowOffset)*0.2})`;
+        ctxLogo.fill();
+        
+        // 周围细小粒子圈（装饰）
+        const particleCount = 6;
+        for (let i = 0; i < particleCount; i++) {
+            const rad = (Date.now() / 800 + i) % (Math.PI * 2);
+            const radius = 68 + Math.sin(glowOffset + i) * 4;
+            const px = cx + Math.cos(rad) * radius;
+            const py = cy + Math.sin(rad) * radius * 0.9;
+            ctxLogo.beginPath();
+            ctxLogo.arc(px, py, 1.8, 0, Math.PI*2);
+            ctxLogo.fillStyle = `rgba(255, 210, 25, 0.7)`;
+            ctxLogo.fill();
+        }
+    }
+    
+    // LOGO动态动画
+    let time = 0;
+    function animateLogo() {
+        time += 0.025;
+        const glow = Math.sin(time) * 0.8;
+        drawInvertedTriangle(time);
+        requestAnimationFrame(animateLogo);
+    }
+    animateLogo();
+    
+    // ---------- 粒子背景系统: 深邃星云+金色粒子飘移，鼠标互动产生随机扰动 ----------
+    const bgCanvas = document.getElementById('bg-canvas');
+    let bgCtx = bgCanvas.getContext('2d');
+    let particles = [];
+    let mouseX = null, mouseY = null;
+    let canvasWidth = window.innerWidth, canvasHeight = window.innerHeight;
+    
+    function resizeCanvas() {
+        canvasWidth = window.innerWidth;
+        canvasHeight = window.innerHeight;
+        bgCanvas.width = canvasWidth;
+        bgCanvas.height = canvasHeight;
+        initParticles();
+    }
+    
+    class Particle {
+        constructor(x, y, vx, vy, size, colorType) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.size = size;
+            this.colorType = colorType; // 0:金色调 1:暗红 2:白
+            this.alpha = 0.4 + Math.random() * 0.5;
+            this.life = 1;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            // 边缘重置
+            if (this.x < -50) this.x = canvasWidth + 50;
+            if (this.x > canvasWidth + 50) this.x = -50;
+            if (this.y < -50) this.y = canvasHeight + 50;
+            if (this.y > canvasHeight + 50) this.y = -50;
+            
+            // 鼠标互动影响 (轻微施加力)
+            if (mouseX !== null && mouseY !== null) {
+                const dx = this.x - mouseX;
+                const dy = this.y - mouseY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 150) {
+                    const force = (150 - dist) / 150 * 0.4;
+                    const angle = Math.atan2(dy, dx);
+                    this.vx += Math.cos(angle) * force;
+                    this.vy += Math.sin(angle) * force;
+                    // 限制最大速度
+                    let maxSpeed = 2.2;
+                    if (this.vx > maxSpeed) this.vx = maxSpeed;
+                    if (this.vx < -maxSpeed) this.vx = -maxSpeed;
+                    if (this.vy > maxSpeed) this.vy = maxSpeed;
+                    if (this.vy < -maxSpeed) this.vy = -maxSpeed;
+                }
+            }
+            // 随机微布朗运动
+            this.vx += (Math.random() - 0.5) * 0.05;
+            this.vy += (Math.random() - 0.5) * 0.05;
+            let maxV = 1.4;
+            if (this.vx > maxV) this.vx = maxV;
+            if (this.vx < -maxV) this.vx = -maxV;
+            if (this.vy > maxV) this.vy = maxV;
+            if (this.vy < -maxV) this.vy = -maxV;
+        }
+        draw(ctx) {
+            let color;
+            if (this.colorType === 0) color = `rgba(255, 210, 25, ${this.alpha * 0.7})`;
+            else if (this.colorType === 1) color = `rgba(255/2, 210/2, 25/2, ${this.alpha * 0.5})`;
+            else color = `rgba(255, 210, 25, ${this.alpha * 0.5})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            // 偶尔拖尾感
+            if (this.size > 1.2) {
+                ctx.beginPath();
+                ctx.arc(this.x - this.vx * 1.5, this.y - this.vy * 1.5, this.size * 0.6, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 210, 25, 0.2)`;
+                ctx.fill();
+            }
+        }
+    }
+    
+    function initParticles() {
+        particles = [];
+        const count = Math.min(220, Math.floor(canvasWidth * canvasHeight / 9000));
+        for (let i = 0; i < count; i++) {
+            let x = Math.random() * canvasWidth;
+            let y = Math.random() * canvasHeight;
+            let vx = (Math.random() - 0.5) * 0.6;
+            let vy = (Math.random() - 0.5) * 0.6;
+            let size = Math.random() * 2.2 + 0.6;
+            let colorType = Math.random() > 0.7 ? 1 : (Math.random() > 0.5 ? 0 : 2);
+            particles.push(new Particle(x, y, vx, vy, size, colorType));
+        }
+        // 额外增加几个较大光尘
+        for (let i = 0; i < 30; i++) {
+            particles.push(new Particle(Math.random() * canvasWidth, Math.random() * canvasHeight, (Math.random()-0.5)*0.3, (Math.random()-0.5)*0.3, 2.5, 0));
+        }
+    }
+    
+    function drawBackground() {
+        if (!bgCtx) return;
+        bgCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+        // 径向渐变深渊效果
+        let grad = bgCtx.createRadialGradient(canvasWidth/2, canvasHeight/2, 50, canvasWidth/2, canvasHeight/2, canvasWidth/1.8);
+        grad.addColorStop(0, '#030303');
+        grad.addColorStop(0.6, '#0a0a12');
+        grad.addColorStop(1, '#000000');
+        bgCtx.fillStyle = grad;
+        bgCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+        
+        // 绘制星雾
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+            particles[i].draw(bgCtx);
+        }
+        // 额外绘制极淡的金色星云噪点
+        bgCtx.fillStyle = "rgba(255, 210, 25,0.03)";
+        for (let k = 0; k < 80; k++) {
+            bgCtx.beginPath();
+            bgCtx.arc(Math.random() * canvasWidth, Math.random() * canvasHeight, Math.random() * 3, 0, Math.PI*2);
+            bgCtx.fill();
+        }
+        requestAnimationFrame(drawBackground);
+    }
+    
+    // 鼠标移动记录互动坐标 (用于影响粒子)
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        // 同时可动态影响logo光晕强度（额外效果）
+        const logo = document.getElementById('logo-canvas');
+        if (logo) {
+            let dxLogo = e.clientX - logo.getBoundingClientRect().left - 75;
+            let dyLogo = e.clientY - logo.getBoundingClientRect().top - 75;
+            let dist = Math.hypot(dxLogo, dyLogo);
+            if (dist < 100) {
+                logo.style.filter = `drop-shadow(0 0 20px rgba(255, 210, 25,,0.9))`;
+            } else {
+                logo.style.filter = `drop-shadow(0 0 8px rgba(255, 210, 25,0.5))`;
+            }
+        }
+    });
+    
+    document.addEventListener('mouseleave', () => {
+        mouseX = null;
+        mouseY = null;
+    });
+    
+    // 随机段落按钮交互
+    const btn = document.getElementById('randomBtn');
+    if (btn) {
+        btn.addEventListener('click', () => {
+            randomExcerpt();
+            // 添加触感反馈: 可选的短暂震动效果兼容性忽略
+        });
+    }
+    
+    // 初始随机加载一段优美文字
+    window.addEventListener('load', () => {
+        resizeCanvas();
+        updateExcerpt(currentExcerptIndex);
+        
+        // 添加额外的视觉回响，鼠标点击随机涟漪
+        document.body.addEventListener('click', (e) => {
+            const ripple = document.createElement('div');
+            ripple.style.position = 'fixed';
+            ripple.style.left = e.clientX - 15 + 'px';
+            ripple.style.top = e.clientY - 15 + 'px';
+            ripple.style.width = '30px';
+            ripple.style.height = '30px';
+            ripple.style.borderRadius = '50%';
+            ripple.style.border = '1px solid rgba(255, 210, 25,0.7)';
+            ripple.style.pointerEvents = 'none';
+            ripple.style.zIndex = '9999';
+            ripple.style.animation = 'rippleAnim 0.8s ease-out forwards';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 800);
+        });
+        // 添加keyframes动画
+        const styleSheet = document.createElement("style");
+        styleSheet.textContent = `@keyframes rippleAnim { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(4); opacity: 0; } }`;
+        document.head.appendChild(styleSheet);
+    });
+    
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        // 重置粒子分布
+        initParticles();
+    });
+    
+    resizeCanvas();
+    initParticles();
+    drawBackground();
+    
+    // 额外：移动端也可随机触摸反馈
+    btn && btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        randomExcerpt();
+    });
+</script>
+</body>
+</html>
