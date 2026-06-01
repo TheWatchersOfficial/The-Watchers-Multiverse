@@ -79,3 +79,5 @@ The Watchers 世界观开源社区 | 小说正文 | 设定集 | 共同创作
 ---
 **📄 协议确认**
 当您提交作品申请收录时，即代表您同意该二次创作作品同样采用 **CC BY-NC-SA 4.0** 协议发布，并同意原作者在遵守该协议（署名、非商业、相同方式共享）的前提下将其用于本开源仓库的归档与展示。
+
+[点击此处返回封面网站](https://thewatchersofficial.github.io/The-Watchers-Multiverse/)
